@@ -1,22 +1,21 @@
 require('dotenv').config();
 const express = require('express');
-const path = require('path'); // Módulo nativo para manejar rutas de archivos
-const conectarDB = require('./config/db'); 
+const path = require('path');
+const conectarDB = require('./config/db');
 
-const app = express(); 
-const PORT = process.env.PORT || 10000; 
+const app = express();
+const PORT = process.env.PORT || 10000;
 
-// Conectar a la base de datos
-conectarDB(); 
 
-// Middleware para parsear JSON
-app.use(express.json()); 
+conectarDB();
 
-// 1. Servir archivos estáticos desde la carpeta 'public'
+
+app.use(express.json());
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. Ruta comodín: Si alguien entra a cualquier ruta no definida, envía el index.html
-app.get('*', (req, res) => {
+
+app.get('/{*splat}', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
