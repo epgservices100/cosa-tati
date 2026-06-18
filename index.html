@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Servicio Dinámico</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <header class="sidebar">
+            <h2>Panel Control</h2>
+            <nav class="tabs-menu">
+                <button class="tab-btn active" onclick="switchTab('principal')">📍 Principal</button>
+                <button class="tab-btn" onclick="switchTab('historial')">📜 Historial</button>
+                <button class="tab-btn" onclick="switchTab('pendientes')">⏳ Pendientes</button>
+                <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
+            </nav>
+        </header>
+
+        <main class="content-area">
+            
+            <section id="principal" class="tab-content active">
+                <div class="section-header">
+                    <h3>Servicios Activos (Viñetas Movibles)</h3>
+                    <p>Arrastra y suelta las viñetas para reordenarlas.</p>
+                </div>
+                <div id="drag-container" class="grid-cards">
+                    </div>
+            </section>
+
+            <section id="historial" class="tab-content">
+                <div class="section-header">
+                    <h3>Historial de Máquinas</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Máquina</th>
+                                <th>Acción / Mantenimiento Realizado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="pendientes" class="tab-content">
+                <div class="section-header">
+                    <h3>Tareas Pendientes</h3>
+                    <button class="btn-action" onclick="advanceDates()">📆 +1 Día a Todo</button>
+                </div>
+                <div id="pending-list" class="pending-container">
+                    </div>
+            </section>
+
+            <section id="clientes" class="tab-content">
+                <div class="section-header">
+                    <h3>Catálogo de Clientes y Equipos</h3>
+                </div>
+                <div id="clients-grid" class="clients-grid">
+                    </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
