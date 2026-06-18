@@ -1,4 +1,4 @@
-require('dotenv').config(); [cite, 1]
+require('dotenv').config();
 const express = require('express'); [cite, 1]
 const path = require('path'); // Módulo nativo para manejar rutas de archivos
 const conectarDB = require('./config/db'); [cite, 1]
