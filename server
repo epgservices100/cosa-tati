@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, 'Public')));
 // 2. Ruta comodín configurada con la sintaxis obligatoria de Express v5.
 // Esto intercepta cualquier petición de navegación y le entrega el archivo index.html
 app.get('/{*splat}', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Public', 'index'));
+    res.sendFile(path.join(__dirname, 'Public', 'index.html'));
 });
 
 // Iniciar el servidor
