@@ -214,3 +214,26 @@ tr:nth-child(even) { background-color: #f8fafc; }
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+/* Contenedor para alinear los botones horizontalmente */
+.actions-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Color para los botones de Eliminar (usa la variable roja existente) */
+.btn-delete {
+    background-color: var(--status-sin-iniciar);
+}
+
+.btn-delete:hover {
+    background-color: #dc2626; /* Un rojo un poco más oscuro al pasar el mouse */
+}
+
+/* Opcional: Color diferente para el botón de fecha si quieres distinguirlo */
+.btn-date {
+    background-color: #4b5563;
+}
+.btn-date:hover {
+    background-color: #374151;
+}

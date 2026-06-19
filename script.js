@@ -128,7 +128,7 @@ function updateStatusColor(selectElement, id) {
     
     // Cambiamos el color de la alerta y del select usando las variables CSS
     parentItem.style.borderLeft = `6px solid var(--status-${nuevoEstado})`;
-    selectElement.style.background-color ;  `var(--status-${nuevoEstado})`;
+    selectElement.style.backgroundColor = `var(--status-${nuevoEstado})`;
     
     // Guardamos en memoria el nuevo estado
     let tarea = pendientes.find(item => item.id === id);
@@ -171,3 +171,40 @@ document.addEventListener("DOMContentLoaded", () => {
     renderClientes();
 });
 
+// --- FUNCIONES PARA LOS BOTONES DE ACCIÓN ---
+
+// Funciones para la pestaña Principal
+function agregarServicio() {
+    console.log("Agregar servicio presionado");
+}
+
+function eliminarServicio() {
+    console.log("Eliminar servicio presionado");
+}
+
+// Funciones para la pestaña Historial
+function agregarHistorial() {
+    console.log("Agregar historial presionado");
+}
+
+function eliminarHistorial() {
+    console.log("Eliminar historial presionado");
+}
+
+// Funciones para la pestaña Pendientes
+function agregarTarea() {
+    console.log("Agregar tarea presionado");
+}
+
+function eliminarTarea() {
+    console.log("Eliminar tarea presionado");
+}
+
+// Funciones para la pestaña Clientes
+function agregarCliente() {
+    console.log("Agregar cliente presionado");
+}
+
+function eliminarCliente() {
+    console.log("Eliminar cliente presionado");
+}

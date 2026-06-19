@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<<!DOCTYPE html>>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -20,53 +20,71 @@
         </header>
 
         <main class="content-area">
-            
-            <section id="principal" class="tab-content active">
-                <div class="section-header">
-                    <h3>Servicios Activos (Viñetas Movibles)</h3>
-                    <p>Arrastra y suelta las viñetas para reordenarlas.</p>
-                </div>
-                <div id="drag-container" class="grid-cards">
-                </div>
-            </section>
+    
+    <section id="principal" class="tab-content active">
+        <div class="section-header">
+            <div>
+                <h3>Servicios Activos (Viñetas Movibles)</h3>
+                <p>Arrastra y suelta las viñetas para reordenarlas.</p>
+            </div>
+            <div class="actions-group">
+                <button class="btn-action btn-add" onclick="agregarServicio()">➕ Agregar Servicio</button>
+                <button class="btn-action btn-delete" onclick="eliminarServicio()">🗑️ Eliminar</button>
+            </div>
+        </div>
+        <div id="drag-container" class="grid-cards">
+        </div>
+    </section>
 
-            <section id="historial" class="tab-content">
-                <div class="section-header">
-                    <h3>Historial de Máquinas</h3>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Máquina</th>
-                                <th>Acción / Mantenimiento Realizado</th>
-                                <th>Fecha</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body">
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+    <section id="historial" class="tab-content">
+        <div class="section-header">
+            <h3>Historial de Máquinas</h3>
+            <div class="actions-group">
+                <button class="btn-action btn-add" onclick="agregarHistorial()">➕ Agregar Registro</button>
+                <button class="btn-action btn-delete" onclick="eliminarHistorial()">🗑️ Eliminar</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Máquina</th>
+                        <th>Acción / Mantenimiento Realizado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-            <section id="pendientes" class="tab-content">
-                <div class="section-header">
-                    <h3>Tareas Pendientes</h3>
-                    <button class="btn-action" onclick="advanceDates()">📆 +1 Día a Todo</button>
-                </div>
-                <div id="pending-list" class="pending-container">
-                </div>
-            </section>
+    <section id="pendientes" class="tab-content">
+        <div class="section-header">
+            <h3>Tareas Pendientes</h3>
+            <div class="actions-group">
+                <button class="btn-action btn-date" onclick="advanceDates()">📆 +1 Día a Todo</button>
+                <button class="btn-action btn-add" onclick="agregarTarea()">➕ Agregar Tarea</button>
+                <button class="btn-action btn-delete" onclick="eliminarTarea()">🗑️ Eliminar</button>
+            </div>
+        </div>
+        <div id="pending-list" class="pending-container">
+        </div>
+    </section>
 
-            <section id="clientes" class="tab-content">
-                <div class="section-header">
-                    <h3>Catálogo de Clientes y Equipos</h3>
-                </div>
-                <div id="clients-grid" class="clients-grid">
-                </div>
-            </section>
+    <section id="clientes" class="tab-content">
+        <div class="section-header">
+            <h3>Catálogo de Clientes y Equipos</h3>
+            <div class="actions-group">
+                <button class="btn-action btn-add" onclick="agregarCliente()">➕ Agregar Cliente</button>
+                <button class="btn-action btn-delete" onclick="eliminarCliente()">🗑️ Eliminar</button>
+            </div>
+        </div>
+        <div id="clients-grid" class="clients-grid">
+        </div>
+    </section>
 
-        </main>
+</main>
     </div>
 
     <script src="/script.js"></script>
