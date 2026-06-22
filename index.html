@@ -1,92 +1,1036 @@
-<<!DOCTYPE html>>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Servicio Dinámico</title>
-    <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Servicio</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --border: #e0ddd8;
+    --border-strong: #c8c5bf;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6966;
+    --text-muted: #9b9895;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --sidebar-bg: #1a1a18;
+    --sidebar-text: #e8e6e0;
+    --sidebar-muted: #7a7774;
+    --sidebar-active: #2563eb;
+    --status-pendiente-bg: #fef9ec;
+    --status-pendiente-text: #92400e;
+    --status-pendiente-border: #fbbf24;
+    --status-sin-iniciar-bg: #f1f5f9;
+    --status-sin-iniciar-text: #334155;
+    --status-sin-iniciar-border: #94a3b8;
+    --status-en-proceso-bg: #eff6ff;
+    --status-en-proceso-text: #1e40af;
+    --status-en-proceso-border: #60a5fa;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 200px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid #2a2a28;
+  }
+
+  .sidebar-header h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sidebar-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .tabs-menu {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--sidebar-muted);
+    text-align: left;
+    padding: 10px 20px;
+    font-size: 13.5px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tab-btn:hover { background: #252523; color: var(--sidebar-text); }
+  .tab-btn.active { background: #252523; color: #fff; border-left: 3px solid var(--sidebar-active); padding-left: 17px; }
+
+  .content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 36px;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+  }
+
+  .section-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: #1d4ed8; }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-secondary:hover { background: var(--bg); }
+
+  .btn-danger {
+    background: none;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 0;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-danger:hover { background: var(--danger-light); }
+
+  .btn-success {
+    background: none;
+    color: var(--success);
+    border: 1px solid var(--success);
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 0;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-success:hover { background: var(--success-light); }
+
+  /* PRINCIPAL - Cards */
+  .grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .service-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    cursor: grab;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+
+  .service-card:hover { border-color: var(--border-strong); }
+  .service-card.dragging { opacity: 0.45; border: 1px dashed var(--accent); }
+  .service-card.drag-over { border: 1px solid var(--accent); background: var(--accent-light); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .card-machine {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .card-client {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .card-status {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border: 1px solid;
+    border-radius: 0;
+  }
+
+  .status-pendiente { background: var(--status-pendiente-bg); color: var(--status-pendiente-text); border-color: var(--status-pendiente-border); }
+  .status-sin-iniciar { background: var(--status-sin-iniciar-bg); color: var(--status-sin-iniciar-text); border-color: var(--status-sin-iniciar-border); }
+  .status-en-proceso { background: var(--status-en-proceso-bg); color: var(--status-en-proceso-text); border-color: var(--status-en-proceso-border); }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .card-date { font-size: 12px; color: var(--text-muted); }
+
+  /* HISTORIAL - Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    background: var(--bg);
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafaf9; }
+
+  .td-actions { text-align: right; white-space: nowrap; }
+
+  /* Estilos agregados para buscador e interactividad en historial */
+  .search-input {
+    border: 1px solid var(--border-strong);
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 0;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--text-primary);
+    width: 240px;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .clickable-machine {
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .clickable-machine:hover {
+    text-decoration: underline;
+  }
+  .history-row.highlight td {
+    background: var(--accent-light) !important;
+  }
+
+  /* PENDIENTES */
+  .pending-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .pending-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .pending-info { display: flex; flex-direction: column; gap: 6px; }
+  .pending-title { font-weight: 600; font-size: 14px; }
+  .pending-client { font-size: 12.5px; color: var(--text-secondary); }
+
+  .pending-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .day-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  .day-input {
+    width: 50px;
+    border: 1px solid var(--border-strong);
+    border-radius: 0;
+    padding: 4px 6px;
+    font-size: 13px;
+    font-family: inherit;
+    text-align: center;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .btn-day-add {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 9px;
+    border-radius: 0;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-day-add:hover { background: var(--bg); color: var(--text-primary); }
+
+  .pending-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+  /* STATUS SELECT */
+  .status-select {
+    border: 1px solid;
+    border-radius: 0;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 22px;
+  }
+
+  /* CLIENTES */
+  .clients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .client-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+  }
+
+  .client-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .client-contact {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .client-machines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .machine-tag {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .client-footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    width: 420px;
+    max-width: 95vw;
+    padding: 28px;
+  }
+
+  .modal h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    border-radius: 0;
+    padding: 9px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: border-color 0.15s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .form-group textarea { height: 80px; resize: vertical; }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    padding: 56px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13.5px;
+  }
+
+  /* Status colors for select */
+  .sel-pendiente { background: var(--status-pendiente-bg); color: var(--status-pendiente-text); border-color: var(--status-pendiente-border); }
+  .sel-sin-iniciar { background: var(--status-sin-iniciar-bg); color: var(--status-sin-iniciar-text); border-color: var(--status-sin-iniciar-border); }
+  .sel-en-proceso { background: var(--status-en-proceso-bg); color: var(--status-en-proceso-text); border-color: var(--status-en-proceso-border); }
+</style>
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <header class="sidebar">
-            <h2>Panel Control</h2>
-            <nav class="tabs-menu">
-                <button class="tab-btn active" onclick="switchTab('principal')">📍 Principal</button>
-                <button class="tab-btn" onclick="switchTab('historial')">📜 Historial</button>
-                <button class="tab-btn" onclick="switchTab('pendientes')">⏳ Pendientes</button>
-                <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
-            </nav>
-        </header>
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h2>Panel Control</h2>
+  </div>
+  <nav class="tabs-menu">
+    <button class="tab-btn active" onclick="switchTab('principal')">📍 Principal</button>
+    <button class="tab-btn" onclick="switchTab('historial')">📜 Historial</button>
+    <button class="tab-btn" onclick="switchTab('pendientes')">⏳ Pendientes</button>
+    <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
+  </nav>
+</aside>
 
-        <main class="content-area">
-    
-    <section id="principal" class="tab-content active">
-        <div class="section-header">
-            <div>
-                <h3>Servicios Activos (Viñetas Movibles)</h3>
-                <p>Arrastra y suelta las viñetas para reordenarlas.</p>
-            </div>
-            <div class="actions-group">
-                <button class="btn-action btn-add" onclick="agregarServicio()">➕ Agregar Servicio</button>
-                <button class="btn-action btn-delete" onclick="eliminarServicio()">🗑️ Eliminar</button>
-            </div>
-        </div>
-        <div id="drag-container" class="grid-cards">
-        </div>
-    </section>
+<main class="content-area">
 
-    <section id="historial" class="tab-content">
-        <div class="section-header">
-            <h3>Historial de Máquinas</h3>
-            <div class="actions-group">
-                <button class="btn-action btn-add" onclick="agregarHistorial()">➕ Agregar Registro</button>
-                <button class="btn-action btn-delete" onclick="eliminarHistorial()">🗑️ Eliminar</button>
-            </div>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Máquina</th>
-                        <th>Acción / Mantenimiento Realizado</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody id="history-table-body">
-                </tbody>
-            </table>
-        </div>
-    </section>
+  <section id="principal" class="tab-content active">
+    <div class="section-header">
+      <h3>Servicios Activos</h3>
+      <button class="btn-primary" onclick="openModal('add-service')">＋ Agregar servicio</button>
+    </div>
+    <div id="drag-container" class="grid-cards"></div>
+  </section>
 
-    <section id="pendientes" class="tab-content">
-        <div class="section-header">
-            <h3>Tareas Pendientes</h3>
-            <div class="actions-group">
-                <button class="btn-action btn-date" onclick="advanceDates()">📆 +1 Día a Todo</button>
-                <button class="btn-action btn-add" onclick="agregarTarea()">➕ Agregar Tarea</button>
-                <button class="btn-action btn-delete" onclick="eliminarTarea()">🗑️ Eliminar</button>
-            </div>
-        </div>
-        <div id="pending-list" class="pending-container">
-        </div>
-    </section>
+  <section id="historial" class="tab-content">
+    <div class="section-header">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <h3>Historial de Máquinas</h3>
+        <input type="text" id="search-history-machine" class="search-input" placeholder="🔍 Buscar máquina y presionar Enter..." onkeypress="searchHistory(event)">
+      </div>
+      <button class="btn-primary" onclick="openModal('add-history')">＋ Agregar registro</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Máquina</th>
+            <th>Acción / Mantenimiento</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="history-table-body"></tbody>
+      </table>
+    </div>
+  </section>
 
-    <section id="clientes" class="tab-content">
-        <div class="section-header">
-            <h3>Catálogo de Clientes y Equipos</h3>
-            <div class="actions-group">
-                <button class="btn-action btn-add" onclick="agregarCliente()">➕ Agregar Cliente</button>
-                <button class="btn-action btn-delete" onclick="eliminarCliente()">🗑️ Eliminar</button>
-            </div>
-        </div>
-        <div id="clients-grid" class="clients-grid">
-        </div>
-    </section>
+  <section id="pendientes" class="tab-content">
+    <div class="section-header">
+      <h3>Tareas Pendientes</h3>
+      <button class="btn-primary" onclick="openModal('add-pending')">＋ Agregar tarea</button>
+    </div>
+    <div id="pending-list" class="pending-list"></div>
+  </section>
+
+  <section id="clientes" class="tab-content">
+    <div class="section-header">
+      <h3>Catálogo de Clientes y Equipos</h3>
+      <button class="btn-primary" onclick="openModal('add-client')">＋ Agregar cliente</button>
+    </div>
+    <div id="clients-grid" class="clients-grid"></div>
+  </section>
 
 </main>
-    </div>
 
-    <script src="/script.js"></script>
+<div class="modal-overlay" id="modal-add-service">
+  <div class="modal">
+    <h4>Nuevo Servicio</h4>
+    <div class="form-group"><label>Máquina</label><input type="text" id="svc-machine" placeholder="Nombre de la máquina"></div>
+    <div class="form-group"><label>Cliente</label><input type="text" id="svc-client" placeholder="Nombre del cliente"></div>
+    <div class="form-group"><label>Descripción</label><textarea id="svc-desc" placeholder="Detalle del servicio..."></textarea></div>
+    <div class="form-group"><label>Estado</label>
+      <select id="svc-status">
+        <option value="sin-iniciar">Sin iniciar</option>
+        <option value="en-proceso">En proceso</option>
+        <option value="pendiente">Pendiente</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Fecha</label><input type="date" id="svc-date"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('add-service')">Cancelar</button>
+      <button class="btn-primary" onclick="addService()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-history">
+  <div class="modal">
+    <h4>Nuevo Registro de Historial</h4>
+    <div class="form-group"><label>Máquina</label><input type="text" id="hist-machine" placeholder="Nombre de la máquina"></div>
+    <div class="form-group"><label>Acción / Mantenimiento</label><textarea id="hist-action" placeholder="Descripción del trabajo realizado..."></textarea></div>
+    <div class="form-group"><label>Fecha</label><input type="date" id="hist-date"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('add-history')">Cancelar</button>
+      <button class="btn-primary" onclick="addHistory()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-pending">
+  <div class="modal">
+    <h4>Nueva Tarea Pendiente</h4>
+    <div class="form-group"><label>Título de la tarea</label><input type="text" id="pend-title" placeholder="Ej: Revisión de compresor"></div>
+    <div class="form-group"><label>Cliente</label><input type="text" id="pend-client" placeholder="Nombre del cliente"></div>
+    <div class="form-group"><label>Máquina</label><input type="text" id="pend-machine" placeholder="Máquina relacionada"></div>
+    <div class="form-group"><label>Estado</label>
+      <select id="pend-status">
+        <option value="sin-iniciar">Sin iniciar</option>
+        <option value="en-proceso">En proceso</option>
+        <option value="pendiente">Pendiente</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Fecha límite</label><input type="date" id="pend-date"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('add-pending')">Cancelar</button>
+      <button class="btn-primary" onclick="addPending()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-client">
+  <div class="modal">
+    <h4>Nuevo Cliente</h4>
+    <div class="form-group"><label>Nombre</label><input type="text" id="cli-name" placeholder="Nombre del cliente o empresa"></div>
+    <div class="form-group"><label>Contacto</label><input type="text" id="cli-contact" placeholder="Teléfono o email"></div>
+    <div class="form-group"><label>Equipos / Máquinas (separados por coma)</label><input type="text" id="cli-machines" placeholder="Máquina A, Máquina B"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('add-client')">Cancelar</button>
+      <button class="btn-primary" onclick="addClient()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-view-machine-history">
+  <div class="modal" style="max-height: 80vh; display: flex; flex-direction: column;">
+    <h4 id="vmh-title">Historial de Máquina</h4>
+    <div id="vmh-content" style="overflow-y: auto; flex: 1; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;">
+      </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('view-machine-history')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let services = [
+  { id: 1, machine: 'Compresor Atlas Copco', client: 'Metalúrgica Don Bosco', desc: 'Reemplazo de filtros y ajuste de válvulas de retención.', status: 'en-proceso', date: '2025-06-20' },
+  { id: 2, machine: 'Torno CNC Mazak', client: 'Taller Rodríguez', desc: 'Calibración de ejes X/Y y revisión del husillo.', status: 'sin-iniciar', date: '2025-06-22' },
+  { id: 3, machine: 'Soldadora MIG Miller', client: 'Construcciones Patagónicas', desc: 'Mantenimiento de antorcha y limpieza interna.', status: 'pendiente', date: '2025-06-18' },
+];
+
+let history = [
+  { id: 1, machine: 'Compresor Kaeser', action: 'Cambio de aceite y limpieza de separadores.', date: '2025-06-10' },
+  { id: 2, machine: 'Fresadora Bridgeport', action: 'Ajuste de mesa y reemplazo de correa principal.', date: '2025-06-14' },
+];
+
+let pending = [
+  { id: 1, title: 'Revisión completa de compresor', client: 'Metalúrgica Don Bosco', machine: 'Compresor Atlas Copco', status: 'en-proceso', date: '2025-06-28' },
+  { id: 2, title: 'Limpieza y lubricación de torno', client: 'Taller Rodríguez', machine: 'Torno CNC Mazak', status: 'sin-iniciar', date: '2025-07-01' },
+];
+
+let clients = [
+  { id: 1, name: 'Metalúrgica Don Bosco', contact: '(0298) 441-2233', machines: ['Compresor Atlas Copco', 'Soldadora TIG'] },
+  { id: 2, name: 'Taller Rodríguez', contact: '(0298) 447-8821', machines: ['Torno CNC Mazak', 'Fresadora Bridgeport'] },
+  { id: 3, name: 'Construcciones Patagónicas', contact: '(0298) 443-9900', machines: ['Soldadora MIG Miller'] },
+];
+
+let nextId = 100;
+
+// ─── TAB SWITCHING ────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ─── STATUS HELPERS ───────────────────────────────────────
+function statusLabel(s) {
+  if (s === 'pendiente') return 'Pendiente';
+  if (s === 'sin-iniciar') return 'Sin iniciar';
+  if (s === 'en-proceso') return 'En proceso';
+  return s;
+}
+
+function statusClass(s) {
+  if (s === 'pendiente') return 'status-pendiente';
+  if (s === 'sin-iniciar') return 'status-sin-iniciar';
+  if (s === 'en-proceso') return 'status-en-proceso';
+  return '';
+}
+
+function selectClass(s) {
+  if (s === 'pendiente') return 'sel-pendiente';
+  if (s === 'sin-iniciar') return 'sel-sin-iniciar';
+  if (s === 'en-proceso') return 'sel-en-proceso';
+  return '';
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ─── MODAL ────────────────────────────────────────────────
+function openModal(name) {
+  if (name === 'add-service') document.getElementById('svc-date').value = todayStr();
+  if (name === 'add-history') document.getElementById('hist-date').value = todayStr();
+  if (name === 'add-pending') document.getElementById('pend-date').value = todayStr();
+  document.getElementById('modal-' + name).classList.add('open');
+}
+
+function closeModal(name) {
+  document.getElementById('modal-' + name).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ─── LÓGICA DE BÚSQUEDA Y VENTANA DE MÁQUINA ──────────────
+function searchHistory(e) {
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim().toLowerCase();
+    const rows = document.querySelectorAll('.history-row');
+    
+    rows.forEach(row => {
+      const machineName = row.getAttribute('data-machine');
+      if (query && machineName.includes(query)) {
+        row.classList.add('highlight');
+      } else {
+        row.classList.remove('highlight');
+      }
+    });
+  }
+}
+
+function openMachineHistoryModal(machineName) {
+  document.getElementById('vmh-title').innerText = `Historial: ${machineName}`;
+  const contentContainer = document.getElementById('vmh-content');
+  
+  // Filtrar los registros globales del historial para esta máquina concreta
+  const machineRecords = history.filter(h => h.machine.toLowerCase() === machineName.toLowerCase());
+  
+  if (!machineRecords.length) {
+    contentContainer.innerHTML = '<div class="empty-state">No se encontraron tareas previas registradas para esta máquina.</div>';
+  } else {
+    // Ordenar por fecha de manera descendente
+    const sorted = [...machineRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+    contentContainer.innerHTML = sorted.map(r => `
+      <div style="padding: 12px; background: var(--bg); border-left: 3px solid var(--accent); font-size: 13px;">
+        <div style="font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">🗓️ ${fmtDate(r.date)}</div>
+        <div style="color: var(--text-primary); line-height: 1.4;">${r.action}</div>
+      </div>
+    `).join('');
+  }
+  
+  openModal('view-machine-history');
+}
+
+// ─── SERVICES ─────────────────────────────────────────────
+function renderServices() {
+  const container = document.getElementById('drag-container');
+  if (!services.length) {
+    container.innerHTML = '<div class="empty-state">No hay servicios activos. Agrega uno con el botón de arriba.</div>';
+    return;
+  }
+  container.innerHTML = services.map(s => `
+    <div class="service-card" draggable="true" data-id="${s.id}"
+         ondragstart="dragStart(event,${s.id})"
+         ondragover="dragOver(event)"
+         ondragleave="dragLeave(event)"
+         ondrop="drop(event,${s.id})"
+         ondragend="dragEnd(event)">
+      <div class="card-header">
+        <span class="card-machine">${s.machine}</span>
+      </div>
+      <div class="card-client">${s.client}</div>
+      <div class="card-desc">${s.desc}</div>
+      <span class="card-status ${statusClass(s.status)}">${statusLabel(s.status)}</span>
+      <div class="card-footer">
+        <span class="card-date">${fmtDate(s.date)}</span>
+        <button class="btn-danger" onclick="deleteService(${s.id})">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addService() {
+  const machine = document.getElementById('svc-machine').value.trim();
+  const client = document.getElementById('svc-client').value.trim();
+  const desc = document.getElementById('svc-desc').value.trim();
+  const status = document.getElementById('svc-status').value;
+  const date = document.getElementById('svc-date').value;
+  if (!machine || !client) { alert('Ingresá al menos la máquina y el cliente.'); return; }
+  services.push({ id: ++nextId, machine, client, desc, status, date });
+  ['svc-machine','svc-client','svc-desc'].forEach(id => document.getElementById(id).value = '');
+  closeModal('add-service');
+  renderServices();
+}
+
+function deleteService(id) {
+  if (!confirm('¿Eliminar este servicio?')) return;
+  services = services.filter(s => s.id !== id);
+  renderServices();
+}
+
+// ─── DRAG & DROP ──────────────────────────────────────────
+let dragId = null;
+
+function dragStart(e, id) {
+  dragId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function dragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function drop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragId === targetId) return;
+  const fromIdx = services.findIndex(s => s.id === dragId);
+  const toIdx = services.findIndex(s => s.id === targetId);
+  const [item] = services.splice(fromIdx, 1);
+  services.splice(toIdx, 0, item);
+  renderServices();
+}
+
+function dragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  dragId = null;
+}
+
+// ─── HISTORY ──────────────────────────────────────────────
+function renderHistory() {
+  const tbody = document.getElementById('history-table-body');
+  if (!history.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">Sin registros aún.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = history.map(h => {
+    const safeName = h.machine.replace(/'/g, "\\'");
+    return `
+      <tr class="history-row" data-machine="${h.machine.toLowerCase()}">
+        <td><strong class="clickable-machine" onclick="openMachineHistoryModal('${safeName}')" title="Ver historial de esta máquina">${h.machine}</strong></td>
+        <td>${h.action}</td>
+        <td>${fmtDate(h.date)}</td>
+        <td class="td-actions"><button class="btn-danger" onclick="deleteHistory(${h.id})">Eliminar</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function addHistory() {
+  const machine = document.getElementById('hist-machine').value.trim();
+  const action = document.getElementById('hist-action').value.trim();
+  const date = document.getElementById('hist-date').value;
+  if (!machine || !action) { alert('Ingresá la máquina y la acción realizada.'); return; }
+  history.push({ id: ++nextId, machine, action, date });
+  document.getElementById('hist-machine').value = '';
+  document.getElementById('hist-action').value = '';
+  closeModal('add-history');
+  renderHistory();
+}
+
+function deleteHistory(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  history = history.filter(h => h.id !== id);
+  renderHistory();
+}
+
+// ─── PENDING ──────────────────────────────────────────────
+function renderPending() {
+  const container = document.getElementById('pending-list');
+  if (!pending.length) {
+    container.innerHTML = '<div class="empty-state">No hay tareas pendientes.</div>';
+    return;
+  }
+  container.innerHTML = pending.map(p => `
+    <div class="pending-item" id="pend-item-${p.id}">
+      <div class="pending-info">
+        <div class="pending-title">${p.title}</div>
+        <div class="pending-client">${p.client} · ${p.machine}</div>
+        <div class="pending-footer">
+          <select class="status-select ${selectClass(p.status)}"
+                  onchange="changePendingStatus(${p.id}, this.value); updateSelectStyle(this)">
+            <option value="sin-iniciar" ${p.status==='sin-iniciar'?'selected':''}>Sin iniciar</option>
+            <option value="en-proceso"  ${p.status==='en-proceso'?'selected':''}>En proceso</option>
+            <option value="pendiente"   ${p.status==='pendiente'?'selected':''}>Pendiente</option>
+          </select>
+          <div class="day-control">
+            <span>Vence: <strong>${fmtDate(p.date)}</strong></span>
+            <input class="day-input" type="number" min="1" max="365" placeholder="días" id="days-${p.id}">
+            <button class="btn-day-add" onclick="addDaysToPending(${p.id})">＋ días</button>
+          </div>
+        </div>
+      </div>
+      <div class="pending-actions">
+        <button class="btn-success" onclick="finalizePending(${p.id})">✓ Finalizar</button>
+        <button class="btn-danger" onclick="deletePending(${p.id})">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addPending() {
+  const title = document.getElementById('pend-title').value.trim();
+  const client = document.getElementById('pend-client').value.trim();
+  const machine = document.getElementById('pend-machine').value.trim();
+  const status = document.getElementById('pend-status').value;
+  const date = document.getElementById('pend-date').value;
+  if (!title) { alert('Ingresá el título de la tarea.'); return; }
+  pending.push({ id: ++nextId, title, client, machine, status, date });
+  ['pend-title','pend-client','pend-machine'].forEach(id => document.getElementById(id).value = '');
+  closeModal('add-pending');
+  renderPending();
+}
+
+function deletePending(id) {
+  if (!confirm('¿Eliminar esta tarea?')) return;
+  pending = pending.filter(p => p.id !== id);
+  renderPending();
+}
+
+function changePendingStatus(id, newStatus) {
+  const p = pending.find(p => p.id === id);
+  if (p) p.status = newStatus;
+}
+
+function updateSelectStyle(sel) {
+  sel.className = 'status-select ' + selectClass(sel.value);
+}
+
+function addDaysToPending(id) {
+  const input = document.getElementById('days-' + id);
+  const days = parseInt(input.value);
+  if (!days || days < 1) { alert('Ingresá un número de días válido.'); return; }
+  const p = pending.find(p => p.id === id);
+  if (!p) return;
+  const current = p.date ? new Date(p.date + 'T00:00:00') : new Date();
+  current.setDate(current.getDate() + days);
+  p.date = current.toISOString().slice(0, 10);
+  input.value = '';
+  renderPending();
+}
+
+function finalizePending(id) {
+  const p = pending.find(t => t.id === id);
+  if (!p) return;
+  if (!confirm(`¿Marcar "${p.title}" como finalizada y enviar al historial?`)) return;
+  history.push({
+    id: ++nextId,
+    machine: p.machine || p.title,
+    action: `[TAREA FINALIZADA] ${p.title} — Cliente: ${p.client}`,
+    date: todayStr()
+  });
+  pending = pending.filter(t => t.id !== id);
+  renderPending();
+  renderHistory();
+  alert('Tarea finalizada y enviada al historial ✓');
+}
+
+// ─── CLIENTS ──────────────────────────────────────────────
+function renderClients() {
+  const grid = document.getElementById('clients-grid');
+  if (!clients.length) {
+    grid.innerHTML = '<div class="empty-state">Sin clientes registrados.</div>';
+    return;
+  }
+  grid.innerHTML = clients.map(c => `
+    <div class="client-card">
+      <div class="client-name">${c.name}</div>
+      <div class="client-contact">${c.contact}</div>
+      <div class="client-machines">
+        ${c.machines.map(m => `<div class="machine-tag"><span>${m}</span></div>`).join('')}
+      </div>
+      <div class="client-footer">
+        <button class="btn-danger" onclick="deleteClient(${c.id})">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addClient() {
+  const name = document.getElementById('cli-name').value.trim();
+  const contact = document.getElementById('cli-contact').value.trim();
+  const machinesRaw = document.getElementById('cli-machines').value.trim();
+  if (!name) { alert('Ingresá el nombre del cliente.'); return; }
+  const machines = machinesRaw ? machinesRaw.split(',').map(m => m.trim()).filter(Boolean) : [];
+  clients.push({ id: ++nextId, name, contact, machines });
+  ['cli-name','cli-contact','cli-machines'].forEach(id => document.getElementById(id).value = '');
+  closeModal('add-client');
+  renderClients();
+}
+
+function deleteClient(id) {
+  if (!confirm('¿Eliminar este cliente?')) return;
+  clients = clients.filter(c => c.id !== id);
+  renderClients();
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+renderServices();
+renderHistory();
+renderPending();
+renderClients();
+</script>
 </body>
 </html>
