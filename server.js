@@ -9,19 +9,29 @@ const PORT = process.env.PORT || 10000;
 // Conectar a la base de datos
 conectarDB();
 
-
-
-
-// 1. Servir los archivos estáticos de la interfaz desde la carpeta 'public'
-app.use(express.static(path.join(__dirname)));
+// Middleware para procesar solicitudes JSON
 app.use(express.json());
 
+// ==========================================
+// MODIFICACIÓN: Enlaces a las 5 colecciones
+// ==========================================
+app.use('/api/clientes', require('./routes/clientes'));
+app.use('/api/historial', require('./routes/historial'));
+app.use('/api/pendientes', require('./routes/pendientes'));
+app.use('/api/principal', require('./routes/principal'));
+app.use('/api/reuniones', require('./routes/reuniones'));
+// ==========================================
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// 1. Servir los archivos estáticos de la interfaz desde la carpeta 'public'
+app.use(express.static(path.join(__dirname, 'Public')));
+
+// 2. Ruta comodín configurada con la sintaxis obligatoria de Express v5.
+// Intercepta cualquier petición de navegación y le entrega el archivo index.html
+app.get('/{*splat}', (req, res) => {
+    res.sendFile(path.join(__dirname, 'Public', 'index.html'));
 });
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
