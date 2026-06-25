@@ -56,7 +56,9 @@ app.get('/api/services', async (req, res) => {
 app.post('/api/services', async (req, res) => {
   try {
     const count = await Service.countDocuments();
-    const item = new Service({ ...req.body, order: count });
+    // BASE: Si el cliente viene vacío, asigna 'Cliente General'
+    const clientName = req.body.client?.trim() || 'Cliente General';
+    const item = new Service({ ...req.body, client: clientName, order: count });
     await item.save();
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -128,7 +130,9 @@ app.get('/api/pending', async (req, res) => {
 
 app.post('/api/pending', async (req, res) => {
   try {
-    const item = new Pending(req.body);
+    // BASE: Si el cliente viene vacío, asigna 'Cliente General'
+    const clientName = req.body.client?.trim() || 'Cliente General';
+    const item = new Pending({ ...req.body, client: clientName });
     await item.save();
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -183,9 +187,45 @@ app.get('/api/clients', async (req, res) => {
 
 app.post('/api/clients', async (req, res) => {
   try {
+    // BASE: Si el nombre del cliente viene vacío, asigna 'Cliente General'
+    req.body.name = req.body.name?.trim() || 'Cliente General';
     const item = new Client(req.body);
     await item.save();
     res.status(201).json(item);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// NUEVO: Ruta para mover una máquina entre clientes (corrigiendo equivocaciones)
+app.put('/api/clients/move-machine', async (req, res) => {
+  try {
+    const { machine, fromClientName, toClientName } = req.body;
+
+    // 1. Remover la máquina del array del cliente de origen
+    await Client.findOneAndUpdate(
+      { name: fromClientName },
+      { $pull: { machines: machine } }
+    );
+
+    // 2. Agregar la máquina al array del cliente destino (crea el cliente destino si no existe)
+    await Client.findOneAndUpdate(
+      { name: toClientName },
+      { $addToSet: { machines: machine } },
+      { upsert: true }
+    );
+
+    // 3. Reasignar los servicios activos de esa máquina que correspondían al cliente de origen
+    await Service.updateMany(
+      { machine: machine, client: fromClientName },
+      { client: toClientName }
+    );
+
+    // 4. Reasignar las tareas pendientes de esa máquina que correspondían al cliente de origen
+    await Pending.updateMany(
+      { machine: machine, client: fromClientName },
+      { client: toClientName }
+    );
+
+    res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -579,7 +579,7 @@
   <div class="modal">
     <h4>Nuevo Servicio</h4>
     <div class="form-group"><label>Máquina</label><input type="text" id="svc-machine" placeholder="Nombre de la máquina"></div>
-    <div class="form-group"><label>Cliente</label><input type="text" id="svc-client" placeholder="Nombre del cliente"></div>
+    <div class="form-group"><label>Cliente</label><input type="text" id="svc-client" placeholder="Nombre del cliente (vacío para General)"></div>
     <div class="form-group"><label>Descripción</label><textarea id="svc-desc" placeholder="Detalle del servicio..."></textarea></div>
     <div class="form-group"><label>Estado</label>
       <select id="svc-status">
@@ -613,7 +613,7 @@
   <div class="modal">
     <h4>Nueva Tarea Pendiente</h4>
     <div class="form-group"><label>Título de la tarea</label><input type="text" id="pend-title" placeholder="Ej: Revisión de compresor"></div>
-    <div class="form-group"><label>Cliente</label><input type="text" id="pend-client" placeholder="Nombre del cliente"></div>
+    <div class="form-group"><label>Cliente</label><input type="text" id="pend-client" placeholder="Nombre del cliente (vacío para General)"></div>
     <div class="form-group"><label>Máquina</label><input type="text" id="pend-machine" placeholder="Máquina relacionada"></div>
     <div class="form-group"><label>Estado</label>
       <select id="pend-status">
@@ -633,7 +633,7 @@
 <div class="modal-overlay" id="modal-add-client">
   <div class="modal">
     <h4>Nuevo Cliente</h4>
-    <div class="form-group"><label>Nombre</label><input type="text" id="cli-name" placeholder="Nombre del cliente o empresa"></div>
+    <div class="form-group"><label>Nombre</label><input type="text" id="cli-name" placeholder="Nombre del cliente (vacío para General)"></div>
     <div class="form-group"><label>Contacto</label><input type="text" id="cli-contact" placeholder="Teléfono o email"></div>
     <div class="form-group"><label>Equipos / Máquinas (separados por coma)</label><input type="text" id="cli-machines" placeholder="Máquina A, Máquina B"></div>
     <div class="modal-actions">
@@ -650,6 +650,34 @@
       </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('view-machine-history')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- NUEVO MODAL: Mover Máquina de Cliente -->
+<div class="modal-overlay" id="modal-move-machine">
+  <div class="modal">
+    <h4>🔄 Mover Equipo a otro Cliente</h4>
+    <div class="form-group">
+      <label>Máquina seleccionada</label>
+      <input type="text" id="move-machine-name" readonly style="background: var(--bg); color: var(--text-secondary); font-weight: bold;">
+    </div>
+    <div class="form-group">
+      <label>Cliente de Origen</label>
+      <input type="text" id="move-from-client" readonly style="background: var(--bg); color: var(--text-secondary);">
+    </div>
+    <div class="form-group">
+      <label>Cliente de Destino Existente</label>
+      <select id="move-to-client-select" onchange="document.getElementById('move-to-client-text').value = this.value">
+      </select>
+    </div>
+    <div class="form-group">
+      <label>O Escribe un Cliente Nuevo</label>
+      <input type="text" id="move-to-client-text" placeholder="Escribe el nombre del nuevo cliente">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('move-machine')">Cancelar</button>
+      <button class="btn-primary" onclick="moveMachineSubmit()">Mover Equipo</button>
     </div>
   </div>
 </div>
@@ -813,7 +841,8 @@ async function addService() {
   const desc = document.getElementById('svc-desc').value.trim();
   const status = document.getElementById('svc-status').value;
   const date = document.getElementById('svc-date').value;
-  if (!machine || !client) { alert('Ingresá al menos la máquina y el cliente.'); return; }
+  // CAMBIO: Ahora solo se valida obligatoriamente la máquina. El cliente se encarga el backend de setearlo como General
+  if (!machine) { alert('Ingresá al menos la máquina.'); return; }
   
   await fetch('/api/services', {
     method: 'POST',
@@ -1033,7 +1062,16 @@ function renderClients() {
       <div class="client-name">${c.name}</div>
       <div class="client-contact">${c.contact}</div>
       <div class="client-machines">
-        ${c.machines.map(m => `<div class="machine-tag"><span>${m}</span></div>`).join('')}
+        ${c.machines.map(m => {
+          const safeCli = c.name.replace(/'/g, "\\'");
+          const safeMac = m.replace(/'/g, "\\'");
+          return `
+            <div class="machine-tag">
+              <span>${m}</span>
+              <button class="btn-day-add" style="padding: 2px 6px; font-size: 11px; margin-left: 8px;" onclick="openMoveMachineModal('${safeCli}', '${safeMac}')">🔄 Mover</button>
+            </div>
+          `;
+        }).join('')}
       </div>
       <div class="client-footer">
         <button class="btn-danger" onclick="deleteClient('${c._id}')">Eliminar</button>
@@ -1046,7 +1084,6 @@ async function addClient() {
   const name = document.getElementById('cli-name').value.trim();
   const contact = document.getElementById('cli-contact').value.trim();
   const machinesRaw = document.getElementById('cli-machines').value.trim();
-  if (!name) { alert('Ingresá el nombre del cliente.'); return; }
   const machines = machinesRaw ? machinesRaw.split(',').map(m => m.trim()).filter(Boolean) : [];
   
   await fetch('/api/clients', {
@@ -1063,6 +1100,47 @@ async function addClient() {
 async function deleteClient(id) {
   if (!confirm('¿Eliminar este cliente? (Esto eliminará de forma correlativa todos sus servicios, tareas y el historial vinculados)')) return;
   await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+  await loadAllData();
+}
+
+// NUEVO: Funciones para el Modal de Reasignación / Mover Máquina
+function openMoveMachineModal(clientName, machineName) {
+  document.getElementById('move-machine-name').value = machineName;
+  document.getElementById('move-from-client').value = clientName;
+
+  // Rellenar dinámicamente el select con clientes existentes
+  const select = document.getElementById('move-to-client-select');
+  select.innerHTML = '<option value="">-- Seleccionar cliente existente --</option>' + 
+    clients.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  
+  document.getElementById('move-to-client-text').value = '';
+  openModal('move-machine');
+}
+
+async function moveMachineSubmit() {
+  const machine = document.getElementById('move-machine-name').value;
+  const fromClientName = document.getElementById('move-from-client').value;
+  let toClientName = document.getElementById('move-to-client-text').value.trim();
+
+  if (!toClientName) {
+    alert('Por favor, ingresa o selecciona un cliente destino.');
+    return;
+  }
+
+  if (fromClientName.toLowerCase() === toClientName.toLowerCase()) {
+    alert('El cliente destino no puede ser el mismo que el origen.');
+    return;
+  }
+
+  if (!confirm(`¿Estás seguro de que deseas transferir el equipo "${machine}" al cliente "${toClientName}"?`)) return;
+
+  await fetch('/api/clients/move-machine', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ machine, fromClientName, toClientName })
+  });
+
+  closeModal('move-machine');
   await loadAllData();
 }
 
