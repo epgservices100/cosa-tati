@@ -656,29 +656,34 @@
 
 <script>
 // ─── STATE ───────────────────────────────────────────────
-let services = [
-  { id: 1, machine: 'Compresor Atlas Copco', client: 'Metalúrgica Don Bosco', desc: 'Reemplazo de filtros y ajuste de válvulas de retención.', status: 'en-proceso', date: '2025-06-20' },
-  { id: 2, machine: 'Torno CNC Mazak', client: 'Taller Rodríguez', desc: 'Calibración de ejes X/Y y revisión del husillo.', status: 'sin-iniciar', date: '2025-06-22' },
-  { id: 3, machine: 'Soldadora MIG Miller', client: 'Construcciones Patagónicas', desc: 'Mantenimiento de antorcha y limpieza interna.', status: 'pendiente', date: '2025-06-18' },
-];
+let services = [];
+let history = [];
+let pending = [];
+let clients = [];
 
-let history = [
-  { id: 1, machine: 'Compresor Kaeser', action: 'Cambio de aceite y limpieza de separadores.', date: '2025-06-10' },
-  { id: 2, machine: 'Fresadora Bridgeport', action: 'Ajuste de mesa y reemplazo de correa principal.', date: '2025-06-14' },
-];
+// ─── CARGAR DATOS DESDE BASE DE DATOS ─────────────────────
+async function loadAllData() {
+  try {
+    const resSvc = await fetch('/api/services');
+    services = await resSvc.json();
 
-let pending = [
-  { id: 1, title: 'Revisión completa de compresor', client: 'Metalúrgica Don Bosco', machine: 'Compresor Atlas Copco', status: 'en-proceso', date: '2025-06-28' },
-  { id: 2, title: 'Limpieza y lubricación de torno', client: 'Taller Rodríguez', machine: 'Torno CNC Mazak', status: 'sin-iniciar', date: '2025-07-01' },
-];
+    const resHist = await fetch('/api/history');
+    history = await resHist.json();
 
-let clients = [
-  { id: 1, name: 'Metalúrgica Don Bosco', contact: '(0298) 441-2233', machines: ['Compresor Atlas Copco', 'Soldadora TIG'] },
-  { id: 2, name: 'Taller Rodríguez', contact: '(0298) 447-8821', machines: ['Torno CNC Mazak', 'Fresadora Bridgeport'] },
-  { id: 3, name: 'Construcciones Patagónicas', contact: '(0298) 443-9900', machines: ['Soldadora MIG Miller'] },
-];
+    const resPend = await fetch('/api/pending');
+    pending = await resPend.json();
 
-let nextId = 100;
+    const resCli = await fetch('/api/clients');
+    clients = await resCli.json();
+
+    renderServices();
+    renderHistory();
+    renderPending();
+    renderClients();
+  } catch (err) {
+    console.error("Error al cargar los datos de MongoDB:", err);
+  }
+}
 
 // ─── TAB SWITCHING ────────────────────────────────────────
 function switchTab(tab) {
@@ -757,13 +762,11 @@ function openMachineHistoryModal(machineName) {
   document.getElementById('vmh-title').innerText = `Historial: ${machineName}`;
   const contentContainer = document.getElementById('vmh-content');
   
-  // Filtrar los registros globales del historial para esta máquina concreta
   const machineRecords = history.filter(h => h.machine.toLowerCase() === machineName.toLowerCase());
   
   if (!machineRecords.length) {
     contentContainer.innerHTML = '<div class="empty-state">No se encontraron tareas previas registradas para esta máquina.</div>';
   } else {
-    // Ordenar por fecha de manera descendente
     const sorted = [...machineRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
     contentContainer.innerHTML = sorted.map(r => `
       <div style="padding: 12px; background: var(--bg); border-left: 3px solid var(--accent); font-size: 13px;">
@@ -784,11 +787,11 @@ function renderServices() {
     return;
   }
   container.innerHTML = services.map(s => `
-    <div class="service-card" draggable="true" data-id="${s.id}"
-         ondragstart="dragStart(event,${s.id})"
+    <div class="service-card" draggable="true" data-id="${s._id}"
+         ondragstart="dragStart(event,'${s._id}')"
          ondragover="dragOver(event)"
          ondragleave="dragLeave(event)"
-         ondrop="drop(event,${s.id})"
+         ondrop="drop(event,'${s._id}')"
          ondragend="dragEnd(event)">
       <div class="card-header">
         <span class="card-machine">${s.machine}</span>
@@ -798,29 +801,35 @@ function renderServices() {
       <span class="card-status ${statusClass(s.status)}">${statusLabel(s.status)}</span>
       <div class="card-footer">
         <span class="card-date">${fmtDate(s.date)}</span>
-        <button class="btn-danger" onclick="deleteService(${s.id})">Eliminar</button>
+        <button class="btn-danger" onclick="deleteService('${s._id}')">Eliminar</button>
       </div>
     </div>
   `).join('');
 }
 
-function addService() {
+async function addService() {
   const machine = document.getElementById('svc-machine').value.trim();
   const client = document.getElementById('svc-client').value.trim();
   const desc = document.getElementById('svc-desc').value.trim();
   const status = document.getElementById('svc-status').value;
   const date = document.getElementById('svc-date').value;
   if (!machine || !client) { alert('Ingresá al menos la máquina y el cliente.'); return; }
-  services.push({ id: ++nextId, machine, client, desc, status, date });
+  
+  await fetch('/api/services', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ machine, client, desc, status, date })
+  });
+
   ['svc-machine','svc-client','svc-desc'].forEach(id => document.getElementById(id).value = '');
   closeModal('add-service');
-  renderServices();
+  await loadAllData();
 }
 
-function deleteService(id) {
-  if (!confirm('¿Eliminar este servicio?')) return;
-  services = services.filter(s => s.id !== id);
-  renderServices();
+async function deleteService(id) {
+  if (!confirm('¿Eliminar este servicio? (Esto eliminará las tareas y el historial vinculados de forma correlativa)')) return;
+  await fetch(`/api/services/${id}`, { method: 'DELETE' });
+  await loadAllData();
 }
 
 // ─── DRAG & DROP ──────────────────────────────────────────
@@ -842,17 +851,26 @@ function dragLeave(e) {
   e.currentTarget.classList.remove('drag-over');
 }
 
-function drop(e, targetId) {
+async function drop(e, targetId) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   if (dragId === targetId) return;
-  const fromIdx = services.findIndex(s => s.id === dragId);
-  const toIdx = services.findIndex(s => s.id === targetId);
+  const fromIdx = services.findIndex(s => s._id === dragId);
+  const toIdx = services.findIndex(s => s._id === targetId);
   const [item] = services.splice(fromIdx, 1);
   services.splice(toIdx, 0, item);
+  
   renderServices();
+
+  const orderedIds = services.map(s => s._id);
+  await fetch('/api/services/reorder', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderedIds })
+  });
 }
 
+// ─── DRAG END ─────────────────────────────────────────────
 function dragEnd(e) {
   e.currentTarget.classList.remove('dragging');
   dragId = null;
@@ -872,28 +890,34 @@ function renderHistory() {
         <td><strong class="clickable-machine" onclick="openMachineHistoryModal('${safeName}')" title="Ver historial de esta máquina">${h.machine}</strong></td>
         <td>${h.action}</td>
         <td>${fmtDate(h.date)}</td>
-        <td class="td-actions"><button class="btn-danger" onclick="deleteHistory(${h.id})">Eliminar</button></td>
+        <td class="td-actions"><button class="btn-danger" onclick="deleteHistory('${h._id}')">Eliminar</button></td>
       </tr>
     `;
   }).join('');
 }
 
-function addHistory() {
+async function addHistory() {
   const machine = document.getElementById('hist-machine').value.trim();
   const action = document.getElementById('hist-action').value.trim();
   const date = document.getElementById('hist-date').value;
   if (!machine || !action) { alert('Ingresá la máquina y la acción realizada.'); return; }
-  history.push({ id: ++nextId, machine, action, date });
+  
+  await fetch('/api/history', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ machine, action, date })
+  });
+
   document.getElementById('hist-machine').value = '';
   document.getElementById('hist-action').value = '';
   closeModal('add-history');
-  renderHistory();
+  await loadAllData();
 }
 
-function deleteHistory(id) {
-  if (!confirm('¿Eliminar este registro?')) return;
-  history = history.filter(h => h.id !== id);
-  renderHistory();
+async function deleteHistory(id) {
+  if (!confirm('¿Eliminar este registro? (Esto eliminará los servicios y tareas vinculados de forma correlativa)')) return;
+  await fetch(`/api/history/${id}`, { method: 'DELETE' });
+  await loadAllData();
 }
 
 // ─── PENDING ──────────────────────────────────────────────
@@ -904,86 +928,96 @@ function renderPending() {
     return;
   }
   container.innerHTML = pending.map(p => `
-    <div class="pending-item" id="pend-item-${p.id}">
+    <div class="pending-item" id="pend-item-${p._id}">
       <div class="pending-info">
         <div class="pending-title">${p.title}</div>
         <div class="pending-client">${p.client} · ${p.machine}</div>
         <div class="pending-footer">
           <select class="status-select ${selectClass(p.status)}"
-                  onchange="changePendingStatus(${p.id}, this.value); updateSelectStyle(this)">
+                  onchange="changePendingStatus('${p._id}', this.value); updateSelectStyle(this)">
             <option value="sin-iniciar" ${p.status==='sin-iniciar'?'selected':''}>Sin iniciar</option>
             <option value="en-proceso"  ${p.status==='en-proceso'?'selected':''}>En proceso</option>
             <option value="pendiente"   ${p.status==='pendiente'?'selected':''}>Pendiente</option>
           </select>
           <div class="day-control">
             <span>Vence: <strong>${fmtDate(p.date)}</strong></span>
-            <input class="day-input" type="number" min="1" max="365" placeholder="días" id="days-${p.id}">
-            <button class="btn-day-add" onclick="addDaysToPending(${p.id})">＋ días</button>
+            <input class="day-input" type="number" min="1" max="365" placeholder="días" id="days-${p._id}">
+            <button class="btn-day-add" onclick="addDaysToPending('${p._id}')">＋ días</button>
           </div>
         </div>
       </div>
       <div class="pending-actions">
-        <button class="btn-success" onclick="finalizePending(${p.id})">✓ Finalizar</button>
-        <button class="btn-danger" onclick="deletePending(${p.id})">Eliminar</button>
+        <button class="btn-success" onclick="finalizePending('${p._id}')">✓ Finalizar</button>
+        <button class="btn-danger" onclick="deletePending('${p._id}')">Eliminar</button>
       </div>
     </div>
   `).join('');
 }
 
-function addPending() {
+async function addPending() {
   const title = document.getElementById('pend-title').value.trim();
   const client = document.getElementById('pend-client').value.trim();
   const machine = document.getElementById('pend-machine').value.trim();
   const status = document.getElementById('pend-status').value;
   const date = document.getElementById('pend-date').value;
   if (!title) { alert('Ingresá el título de la tarea.'); return; }
-  pending.push({ id: ++nextId, title, client, machine, status, date });
+  
+  await fetch('/api/pending', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, client, machine, status, date })
+  });
+
   ['pend-title','pend-client','pend-machine'].forEach(id => document.getElementById(id).value = '');
   closeModal('add-pending');
-  renderPending();
+  await loadAllData();
 }
 
-function deletePending(id) {
-  if (!confirm('¿Eliminar esta tarea?')) return;
-  pending = pending.filter(p => p.id !== id);
-  renderPending();
+async function deletePending(id) {
+  if (!confirm('¿Eliminar esta tarea? (Esto eliminará los servicios e historial vinculados de forma correlativa)')) return;
+  await fetch(`/api/pending/${id}`, { method: 'DELETE' });
+  await loadAllData();
 }
 
-function changePendingStatus(id, newStatus) {
-  const p = pending.find(p => p.id === id);
-  if (p) p.status = newStatus;
+async function changePendingStatus(id, newStatus) {
+  await fetch(`/api/pending/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  });
 }
 
 function updateSelectStyle(sel) {
   sel.className = 'status-select ' + selectClass(sel.value);
 }
 
-function addDaysToPending(id) {
+async function addDaysToPending(id) {
   const input = document.getElementById('days-' + id);
   const days = parseInt(input.value);
   if (!days || days < 1) { alert('Ingresá un número de días válido.'); return; }
-  const p = pending.find(p => p.id === id);
+  const p = pending.find(p => p._id === id);
   if (!p) return;
   const current = p.date ? new Date(p.date + 'T00:00:00') : new Date();
   current.setDate(current.getDate() + days);
-  p.date = current.toISOString().slice(0, 10);
+  const newDateStr = current.toISOString().slice(0, 10);
+  
+  await fetch(`/api/pending/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: newDateStr })
+  });
+
   input.value = '';
-  renderPending();
+  await loadAllData();
 }
 
-function finalizePending(id) {
-  const p = pending.find(t => t.id === id);
+async function finalizePending(id) {
+  const p = pending.find(t => t._id === id);
   if (!p) return;
   if (!confirm(`¿Marcar "${p.title}" como finalizada y enviar al historial?`)) return;
-  history.push({
-    id: ++nextId,
-    machine: p.machine || p.title,
-    action: `[TAREA FINALIZADA] ${p.title} — Cliente: ${p.client}`,
-    date: todayStr()
-  });
-  pending = pending.filter(t => t.id !== id);
-  renderPending();
-  renderHistory();
+  
+  await fetch(`/api/pending/${id}/finalize`, { method: 'POST' });
+  await loadAllData();
   alert('Tarea finalizada y enviada al historial ✓');
 }
 
@@ -1002,35 +1036,38 @@ function renderClients() {
         ${c.machines.map(m => `<div class="machine-tag"><span>${m}</span></div>`).join('')}
       </div>
       <div class="client-footer">
-        <button class="btn-danger" onclick="deleteClient(${c.id})">Eliminar</button>
+        <button class="btn-danger" onclick="deleteClient('${c._id}')">Eliminar</button>
       </div>
     </div>
   `).join('');
 }
 
-function addClient() {
+async function addClient() {
   const name = document.getElementById('cli-name').value.trim();
   const contact = document.getElementById('cli-contact').value.trim();
   const machinesRaw = document.getElementById('cli-machines').value.trim();
   if (!name) { alert('Ingresá el nombre del cliente.'); return; }
   const machines = machinesRaw ? machinesRaw.split(',').map(m => m.trim()).filter(Boolean) : [];
-  clients.push({ id: ++nextId, name, contact, machines });
+  
+  await fetch('/api/clients', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, contact, machines })
+  });
+
   ['cli-name','cli-contact','cli-machines'].forEach(id => document.getElementById(id).value = '');
   closeModal('add-client');
-  renderClients();
+  await loadAllData();
 }
 
-function deleteClient(id) {
-  if (!confirm('¿Eliminar este cliente?')) return;
-  clients = clients.filter(c => c.id !== id);
-  renderClients();
+async function deleteClient(id) {
+  if (!confirm('¿Eliminar este cliente? (Esto eliminará de forma correlativa todos sus servicios, tareas y el historial vinculados)')) return;
+  await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+  await loadAllData();
 }
 
 // ─── INIT ─────────────────────────────────────────────────
-renderServices();
-renderHistory();
-renderPending();
-renderClients();
+loadAllData();
 </script>
 </body>
 </html>
