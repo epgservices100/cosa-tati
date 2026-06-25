@@ -17,7 +17,10 @@ const Service = mongoose.model('Service', new mongoose.Schema({
   desc: String,
   status: String,
   date: String,
-  order: { type: Number, default: 0 }
+  order: { type: Number, default: 0 },
+  operator: String,
+  taskToPerform: String,
+  location: String
 }));
 
 const History = mongoose.model('History', new mongoose.Schema({
@@ -31,7 +34,10 @@ const Pending = mongoose.model('Pending', new mongoose.Schema({
   client: String,
   machine: String,
   status: String,
-  date: String
+  date: String,
+  operator: String,
+  taskToPerform: String,
+  location: String
 }));
 
 const Client = mongoose.model('Client', new mongoose.Schema({
@@ -40,12 +46,16 @@ const Client = mongoose.model('Client', new mongoose.Schema({
   machines: [String]
 }));
 
+// NUEVOS MODELOS PARA PLANTILLAS
+const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ name: String }));
+const Location = mongoose.model('Location', new mongoose.Schema({ name: String }));
+
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
 // ─── ENDPOINTS API CONTROLLER ─────────────────────────────
 
-// SERVICIOS ACTIVOS (Pestaña Principal)
+// SERVICIOS ACTIVOS
 app.get('/api/services', async (req, res) => {
   try {
     const data = await Service.find().sort({ order: 1 });
@@ -56,7 +66,6 @@ app.get('/api/services', async (req, res) => {
 app.post('/api/services', async (req, res) => {
   try {
     const count = await Service.countDocuments();
-    // BASE: Si el cliente viene vacío, asigna 'Cliente General'
     const clientName = req.body.client?.trim() || 'Cliente General';
     const item = new Service({ ...req.body, client: clientName, order: count });
     await item.save();
@@ -130,7 +139,6 @@ app.get('/api/pending', async (req, res) => {
 
 app.post('/api/pending', async (req, res) => {
   try {
-    // BASE: Si el cliente viene vacío, asigna 'Cliente General'
     const clientName = req.body.client?.trim() || 'Cliente General';
     const item = new Pending({ ...req.body, client: clientName });
     await item.save();
@@ -153,7 +161,7 @@ app.post('/api/pending/:id/finalize', async (req, res) => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const historyItem = new History({
       machine: p.machine || p.title,
-      action: `[TAREA FINALIZADA] ${p.title} — Cliente: ${p.client}`,
+      action: `[FINALIZADA] ${p.title} — Op: ${p.operator || 'N/A'} — Tarea: ${p.taskToPerform || 'N/A'} — Ubic: ${p.location || 'N/A'}`,
       date: todayStr
     });
     await historyItem.save();
@@ -187,7 +195,6 @@ app.get('/api/clients', async (req, res) => {
 
 app.post('/api/clients', async (req, res) => {
   try {
-    // BASE: Si el nombre del cliente viene vacío, asigna 'Cliente General'
     req.body.name = req.body.name?.trim() || 'Cliente General';
     const item = new Client(req.body);
     await item.save();
@@ -195,36 +202,13 @@ app.post('/api/clients', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// NUEVO: Ruta para mover una máquina entre clientes (corrigiendo equivocaciones)
 app.put('/api/clients/move-machine', async (req, res) => {
   try {
     const { machine, fromClientName, toClientName } = req.body;
-
-    // 1. Remover la máquina del array del cliente de origen
-    await Client.findOneAndUpdate(
-      { name: fromClientName },
-      { $pull: { machines: machine } }
-    );
-
-    // 2. Agregar la máquina al array del cliente destino (crea el cliente destino si no existe)
-    await Client.findOneAndUpdate(
-      { name: toClientName },
-      { $addToSet: { machines: machine } },
-      { upsert: true }
-    );
-
-    // 3. Reasignar los servicios activos de esa máquina que correspondían al cliente de origen
-    await Service.updateMany(
-      { machine: machine, client: fromClientName },
-      { client: toClientName }
-    );
-
-    // 4. Reasignar las tareas pendientes de esa máquina que correspondían al cliente de origen
-    await Pending.updateMany(
-      { machine: machine, client: fromClientName },
-      { client: toClientName }
-    );
-
+    await Client.findOneAndUpdate({ name: fromClientName }, { $pull: { machines: machine } });
+    await Client.findOneAndUpdate({ name: toClientName }, { $addToSet: { machines: machine } }, { upsert: true });
+    await Service.updateMany({ machine: machine, client: fromClientName }, { client: toClientName });
+    await Pending.updateMany({ machine: machine, client: fromClientName }, { client: toClientName });
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -248,11 +232,31 @@ app.delete('/api/clients/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── ENDPOINTS NUEVOS: TAREAS PERSONALIZADAS Y UBICACIONES ───
+app.get('/api/custom-tasks', async (req, res) => {
+  try { res.json(await CustomTask.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/custom-tasks', async (req, res) => {
+  try { const item = new CustomTask(req.body); await item.save(); res.status(201).json(item); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/custom-tasks/:id', async (req, res) => {
+  try { await CustomTask.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/locations', async (req, res) => {
+  try { res.json(await Location.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/locations', async (req, res) => {
+  try { const item = new Location(req.body); await item.save(); res.status(201).json(item); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/locations/:id', async (req, res) => {
+  try { await Location.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Iniciar el servidor
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
