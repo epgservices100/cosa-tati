@@ -46,7 +46,6 @@ const Client = mongoose.model('Client', new mongoose.Schema({
   machines: [String]
 }));
 
-// NUEVOS MODELOS PARA PLANTILLAS
 const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ name: String }));
 const Location = mongoose.model('Location', new mongoose.Schema({ name: String }));
 
@@ -67,8 +66,20 @@ app.post('/api/services', async (req, res) => {
   try {
     const count = await Service.countDocuments();
     const clientName = req.body.client?.trim() || 'Cliente General';
+    const machineName = req.body.machine?.trim();
+    
     const item = new Service({ ...req.body, client: clientName, order: count });
     await item.save();
+
+    // AUTO-CLIENTE: Si hay máquina y cliente, lo crea o actualiza sin duplicar
+    if (machineName) {
+      await Client.findOneAndUpdate(
+        { name: clientName },
+        { $addToSet: { machines: machineName } },
+        { upsert: true }
+      );
+    }
+
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -140,8 +151,20 @@ app.get('/api/pending', async (req, res) => {
 app.post('/api/pending', async (req, res) => {
   try {
     const clientName = req.body.client?.trim() || 'Cliente General';
+    const machineName = req.body.machine?.trim();
+
     const item = new Pending({ ...req.body, client: clientName });
     await item.save();
+
+    // AUTO-CLIENTE: Igual que en servicios, verifica y actualiza
+    if (machineName) {
+      await Client.findOneAndUpdate(
+        { name: clientName },
+        { $addToSet: { machines: machineName } },
+        { upsert: true }
+      );
+    }
+
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -196,8 +219,19 @@ app.get('/api/clients', async (req, res) => {
 app.post('/api/clients', async (req, res) => {
   try {
     req.body.name = req.body.name?.trim() || 'Cliente General';
-    const item = new Client(req.body);
-    await item.save();
+    // Para evitar errores si crean un cliente manualmente que ya existía, usamos update
+    const clientName = req.body.name;
+    const machines = req.body.machines || [];
+
+    const item = await Client.findOneAndUpdate(
+      { name: clientName },
+      { 
+        $set: { contact: req.body.contact },
+        $addToSet: { machines: { $each: machines } }
+      },
+      { upsert: true, new: true }
+    );
+
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -232,7 +266,7 @@ app.delete('/api/clients/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── ENDPOINTS NUEVOS: TAREAS PERSONALIZADAS Y UBICACIONES ───
+// TAREAS Y UBICACIONES
 app.get('/api/custom-tasks', async (req, res) => {
   try { res.json(await CustomTask.find()); } catch (err) { res.status(500).json({ error: err.message }); }
 });
