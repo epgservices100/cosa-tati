@@ -288,9 +288,10 @@ app.delete('/api/locations/:id', async (req, res) => {
   try { await Location.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── CORRECCIÓN AQUÍ ──────────────────────────────────────
-// Usamos el parámetro con nombre ':any*' compatible con Express 5
-app.get('/:any*', (req, res) => {
+// ─── CORRECCIÓN DEFINITIVA AQUÍ ───────────────────────────
+// Usamos una Expresión Regular nativa (/.*/) SIN COMILLAS.
+// Esto evade completamente el parseo de textos que está fallando en Render.
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
