@@ -288,8 +288,9 @@ app.delete('/api/locations/:id', async (req, res) => {
   try { await Location.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Manejo de la ruta principal: Sirve el index.html desde public/
-app.get('/(.*)', (req, res) => {
+// ─── CORRECCIÓN AQUÍ ──────────────────────────────────────
+// Usamos el parámetro con nombre ':any*' compatible con Express 5
+app.get('/:any*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
