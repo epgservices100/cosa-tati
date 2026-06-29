@@ -289,7 +289,7 @@ app.delete('/api/locations/:id', async (req, res) => {
 });
 
 // Manejo de la ruta principal: Sirve el index.html desde public/
-app.get('*', (req, res) => {
+app.get('/(.*)', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
