@@ -1,3 +1,4 @@
+// server.js
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -49,7 +50,9 @@ const Client = mongoose.model('Client', new mongoose.Schema({
 const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ name: String }));
 const Location = mongoose.model('Location', new mongoose.Schema({ name: String }));
 
-app.use(express.static(path.join(__dirname)));
+// ─── MIDDLEWARES ──────────────────────────────────────────
+// Apunta a la carpeta "public" donde debes guardar tu index.html
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // ─── ENDPOINTS API CONTROLLER ─────────────────────────────
@@ -156,7 +159,6 @@ app.post('/api/pending', async (req, res) => {
     const item = new Pending({ ...req.body, client: clientName });
     await item.save();
 
-    // AUTO-CLIENTE: Igual que en servicios, verifica y actualiza
     if (machineName) {
       await Client.findOneAndUpdate(
         { name: clientName },
@@ -219,7 +221,6 @@ app.get('/api/clients', async (req, res) => {
 app.post('/api/clients', async (req, res) => {
   try {
     req.body.name = req.body.name?.trim() || 'Cliente General';
-    // Para evitar errores si crean un cliente manualmente que ya existía, usamos update
     const clientName = req.body.name;
     const machines = req.body.machines || [];
 
@@ -287,10 +288,11 @@ app.delete('/api/locations/:id', async (req, res) => {
   try { await Location.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// Manejo de la ruta principal: Sirve el index.html desde public/
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
+    console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
