@@ -27,7 +27,7 @@ const History = mongoose.model('History', new mongoose.Schema({
   machine: String,
   action: String,
   date: String,
-  location: String // NUEVO: Campo de ubicación en historial
+  location: String
 }));
 
 const Pending = mongoose.model('Pending', new mongoose.Schema({
@@ -50,10 +50,76 @@ const Client = mongoose.model('Client', new mongoose.Schema({
 const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ name: String }));
 const Location = mongoose.model('Location', new mongoose.Schema({ name: String }));
 
+// NUEVO: Modelo de Usuario
+const User = mongoose.model('User', new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['admin', 'user'], default: 'user' }
+}));
+
+// Crear admin preestablecido automáticamente
+async function seedAdmin() {
+  try {
+    const adminExists = await User.findOne({ username: 'epg' });
+    if (!adminExists) {
+      await new User({ username: 'epg', password: '0000', role: 'admin' }).save();
+      console.log('✅ Administrador por defecto (epg/0000) creado con éxito.');
+    }
+  } catch (error) {
+    console.error('Error creando admin por defecto:', error);
+  }
+}
+seedAdmin();
+
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// ─── ENDPOINTS API CONTROLLER ─────────────────────────────
+// ─── ENDPOINTS SISTEMA DE LOGIN Y USUARIOS ───────────────
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username, password });
+    if (user) {
+      res.json({ success: true, user: { id: user._id, username: user.username, role: user.role } });
+    } else {
+      res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
+    }
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/users', async (req, res) => {
+  try { res.json(await User.find()); } 
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    const exists = await User.findOne({ username });
+    if (exists) return res.status(400).json({ error: 'El usuario ya existe' });
+    
+    const newUser = new User({ username, password, role });
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const updated = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── ENDPOINTS RESTO DEL SISTEMA ─────────────────────────
 
 // SERVICIOS ACTIVOS
 app.get('/api/services', async (req, res) => {
@@ -72,7 +138,6 @@ app.post('/api/services', async (req, res) => {
     const item = new Service({ ...req.body, client: clientName, order: count });
     await item.save();
 
-    // AUTO-CLIENTE: Si hay máquina y cliente, lo crea o actualiza sin duplicar
     if (machineName) {
       await Client.findOneAndUpdate(
         { name: clientName },
@@ -80,7 +145,6 @@ app.post('/api/services', async (req, res) => {
         { upsert: true }
       );
     }
-
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -157,7 +221,6 @@ app.post('/api/pending', async (req, res) => {
     const item = new Pending({ ...req.body, client: clientName });
     await item.save();
 
-    // AUTO-CLIENTE
     if (machineName) {
       await Client.findOneAndUpdate(
         { name: clientName },
@@ -165,7 +228,6 @@ app.post('/api/pending', async (req, res) => {
         { upsert: true }
       );
     }
-
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -232,7 +294,6 @@ app.post('/api/clients', async (req, res) => {
       },
       { upsert: true, new: true }
     );
-
     res.status(201).json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
