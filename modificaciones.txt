@@ -20,3 +20,7 @@ cuando se valla a agregar una tarea y ya habia un cliente con ese mismo nombre e
 usuario con contraseña para cada uno
 
 Quiero que al iniciar la pagina, haya un sistema de login en el cual pida usuario y contraseña, habran admins y usuarios normales, en la pestaña de configuracion, solo admins podran acceder a la misma en la cual tambien se podra visualizar las contraseñas de los demas usuarios y admins pudiendo tambien agregar nuevos usuarios, a su vez podran modificar todas las contraseñas, habra un admin preestablecido la cual el usuario es "epg" y la contraseña sera "0000".
+
+al agregar un servicio en principal este se ajuste y se sume a la parte de pendientes es decir que esto sea correlativo es decir aparecera lo mismo en ambos lugares
+
+bien, ahora quiero que el usurio normal, unicamente va a ver sus tareas designada por los admins, nada mas no podran hacer ninguna accion es solo visualizar la tarea, no van a poder ver nada(ni historial, principal, pendiente, clientes nada), luego los admins al momento de designar tareas en el operario desplegara opciones de los usuarios que haran el servicio, a su vez al agregar un servicio en principal este se ajuste y se sume a la parte de pendientes es decir que esto sea correlativo es decir aparecera lo mismo en ambos lugares
