@@ -74,11 +74,6 @@ seedAdmin();
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-async function validateOperator(operatorName) {
-  if (!operatorName || operatorName.trim() === '') return true; // Si está vacío es válido (sin asignar)
-  const user = await User.findOne({ username: operatorName });
-  return !!user; // Retorna true si existe, false si no
-}
 // ─── ENDPOINTS SISTEMA DE LOGIN Y USUARIOS ───────────────
 
 app.post('/api/login', async (req, res) => {
@@ -134,22 +129,13 @@ app.get('/api/services', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-async function validateOperator(operatorName) {
-  if (!operatorName || operatorName.trim() === '') return true; // Si está vacío es válido (sin asignar)
-  const user = await User.findOne({ username: operatorName });
-  return !!user; // Retorna true si existe, false si no
-}
-
 app.post('/api/services', async (req, res) => {
   try {
-    const { operator } = req.body;
-    if (!(await validateOperator(operator))) {
-      return res.status(400).json({ error: 'El operario asignado no es un usuario registrado válido.' });
-    }
-    
     const count = await Service.countDocuments();
+    const clientName = req.body.client?.trim() || 'Cliente General';
+    const machineName = req.body.machine?.trim();
     
-    const item = new Service({ ...req.body, client: req.body.client?.trim() || 'Cliente General', order: count });
+    const item = new Service({ ...req.body, client: clientName, order: count });
     await item.save();
 
     if (machineName) {
@@ -220,20 +206,13 @@ app.delete('/api/history/:id', async (req, res) => {
 });
 
 // PENDIENTES
-app.post('/api/pending', async (req, res) => {
+app.get('/api/pending', async (req, res) => {
   try {
-    const { operator } = req.body;
-    if (!(await validateOperator(operator))) {
-      return res.status(400).json({ error: 'El operario asignado no es un usuario registrado válido.' });
-    }
-
-    // ... resto del código original
-    const item = new Pending({ ...req.body, client: req.body.client?.trim() || 'Cliente General' });
-    await item.save();
-    // ...
+    const data = await Pending.find();
+    res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
-const count = await Service.countDocuments();
+
 app.post('/api/pending', async (req, res) => {
   try {
     const clientName = req.body.client?.trim() || 'Cliente General';
