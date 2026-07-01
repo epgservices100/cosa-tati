@@ -458,17 +458,24 @@ async function doLogin() {
       document.getElementById('user-info').innerText = `Logueado como: ${currentUser.username} (${currentUser.role})`;
       
       if (currentUser.role === 'admin') {
-        document.getElementById('admin-tabs').style.display = 'flex';
-        document.getElementById('user-tabs').style.display = 'none';
-        document.getElementById('tab-btn-config').style.display = 'flex';
-        switchTab('principal');
+  document.getElementById('admin-tabs').style.display = 'flex';
+  document.getElementById('user-tabs').style.display = 'none';
+  document.getElementById('tab-btn-config').style.display = 'flex';
+} else {
+  // Solo mostramos la pestaña "Principal" y ocultamos todo lo demás
+  document.getElementById('admin-tabs').style.display = 'flex'; // Usamos las pestañas admin pero ocultamos botones
+  document.querySelectorAll('#admin-tabs .tab-btn').forEach(btn => {
+      // Ocultamos todo excepto Principal
+      if(btn.innerText.includes('Principal')) {
+          btn.style.display = 'flex';
       } else {
-        document.getElementById('admin-tabs').style.display = 'none';
-        document.getElementById('user-tabs').style.display = 'flex';
-        switchTab('mis-tareas');
+          btn.style.display = 'none';
       }
-      
-      loadAllData();
+  });
+  document.getElementById('user-tabs').style.display = 'none';
+}
+switchTab('principal');      
+loadAllData();
     } else {
       errorEl.innerText = data.message || "Error al iniciar sesión";
       errorEl.style.display = 'block';
@@ -654,8 +661,14 @@ function renderMisTareas() {
 // ─── PRINCIPAL RENDERS (ADMIN) ────────────────────────────
 function renderServices() {
   const container = document.getElementById('drag-container');
-  if (!services.length) { container.innerHTML = '<div class="empty-state">No hay servicios activos.</div>'; return; }
-  container.innerHTML = services.map(s => `
+  // Filtro de seguridad: si es usuario, solo ve sus tareas
+  let data = services;
+  if (currentUser.role !== 'admin') {
+      data = services.filter(s => s.operator === currentUser.username);
+  }
+
+  if (!data.length) { container.innerHTML = '<div class="empty-state">No hay servicios activos asignados a ti.</div>'; return; }
+  container.innerHTML = data.map(s => `..
     <div class="service-card" draggable="true" data-id="${s._id}" ondragstart="dragStart(event,'${s._id}')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'${s._id}')" ondragend="dragEnd(event)">
       <div class="card-header"><span class="card-machine">${s.machine}</span></div>
       <div class="card-client">${s.client}</div>
@@ -870,6 +883,14 @@ function renderPending() {
 }
 
 function buildPendingHTML(taskList) {
+  // Filtro de seguridad: si es usuario, solo ve sus tareas
+  let data = taskList;
+  if (currentUser.role !== 'admin') {
+      data = taskList.filter(p => p.operator === currentUser.username);
+  }
+  
+  if (!data.length) return '<div class="empty-state">No hay tareas pendientes.</div>';
+  
   return taskList.map(p => `
     <div class="pending-item">
       <div class="pending-info">
