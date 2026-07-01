@@ -38,6 +38,11 @@
 
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; height: 100vh; display: flex; overflow: hidden; }
 
+  /* Pantalla de login */
+  #login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+  .login-box { background: var(--surface); padding: 40px; border: 1px solid var(--border-strong); width: 340px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .login-box h3 { text-align: center; margin-bottom: 24px; font-size: 18px; color: var(--text-primary); }
+  
   .sidebar { width: 200px; background: var(--sidebar-bg); display: flex; flex-direction: column; padding: 0; flex-shrink: 0; }
   .sidebar-header { padding: 24px 20px 20px; border-bottom: 1px solid #2a2a28; }
   .sidebar-header h2 { font-size: 13px; font-weight: 600; color: var(--sidebar-muted); letter-spacing: 0.08em; text-transform: uppercase; }
@@ -134,31 +139,51 @@
 </head>
 <body>
 
+<div id="login-screen">
+  <div class="login-box">
+    <h3>Iniciar Sesión</h3>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="login-user" onkeydown="if(event.key === 'Enter') doLogin()">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" onkeydown="if(event.key === 'Enter') doLogin()">
+    </div>
+    <button class="btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="doLogin()">Ingresar</button>
+    <p id="login-error" style="color:var(--danger); font-size:12px; margin-top:12px; display:none; text-align:center; font-weight: 500;"></p>
+  </div>
+</div>
+
 <datalist id="tasks-datalist"></datalist>
 <datalist id="locations-datalist"></datalist>
 
 <aside class="sidebar">
-  <div class="sidebar-header"><h2>Panel Control</h2></div>
+  <div class="sidebar-header">
+    <h2>Panel Control</h2>
+    <div id="user-info" style="font-size: 12px; color: var(--sidebar-muted); margin-top: 8px;"></div>
+  </div>
   <nav class="tabs-menu">
     <button class="tab-btn active" onclick="switchTab('principal')">📍 Principal</button>
     <button class="tab-btn" onclick="switchTab('historial')">📜 Historial</button>
     <button class="tab-btn" onclick="switchTab('pendientes')">⏳ Pendientes</button>
     <button class="tab-btn" onclick="switchTab('clientes')">👥 Clientes</button>
-    <button class="tab-btn" onclick="switchTab('configuracion')">⚙️ Configuración</button>
+    <button class="tab-btn" id="tab-btn-config" style="display:none;" onclick="switchTab('configuracion')">⚙️ Configuración</button>
   </nav>
+  <div style="margin-top: auto; padding: 20px;">
+    <button class="btn-secondary" style="width:100%; justify-content:center; background:none; color:var(--sidebar-muted); border-color:#3a3a38;" onclick="logout()">Cerrar sesión</button>
+  </div>
 </aside>
 
 <main class="content-area">
 
   <section id="principal" class="tab-content active">
-    <!-- BLOQUE 1: SERVICIOS ACTIVOS -->
     <div class="section-header">
       <h3>Servicios Activos</h3>
       <button class="btn-primary" onclick="openModal('add-service')">＋ Agregar servicio</button>
     </div>
     <div id="drag-container" class="grid-cards"></div>
 
-    <!-- BLOQUE 2: TAREAS DE HOY -->
     <div class="section-header" style="margin-top: 48px; border-top: 1px solid var(--border); padding-top: 24px;">
       <h3>📅 Tareas Pendientes para Hoy</h3>
     </div>
@@ -202,9 +227,24 @@
 
   <section id="configuracion" class="tab-content">
     <div class="section-header">
-      <h3>Plantillas de Personalización</h3>
+      <h3>Panel de Administración General</h3>
     </div>
     <div class="config-grid">
+      <div class="template-box" style="grid-column: span 2;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4>👥 Gestión de Usuarios y Accesos</h4>
+          <button class="btn-primary" onclick="openModal('add-user')">＋ Agregar Usuario</button>
+        </div>
+        <div class="table-wrap" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr><th>Usuario</th><th>Rol</th><th>Contraseña (Visible)</th><th>Acciones</th></tr>
+            </thead>
+            <tbody id="users-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="template-box">
         <h4>📋 Tareas Personalizadas</h4>
         <div class="form-group" style="display:flex; gap:8px; margin-top:12px;">
@@ -226,7 +266,6 @@
 
 </main>
 
-<!-- MODAL SERVICIO -->
 <div class="modal-overlay" id="modal-add-service">
   <div class="modal">
     <h4>Nuevo Servicio</h4>
@@ -251,7 +290,6 @@
   </div>
 </div>
 
-<!-- MODAL REGISTRO HISTORIAL -->
 <div class="modal-overlay" id="modal-add-history">
   <div class="modal">
     <h4>Nuevo Registro de Historial</h4>
@@ -266,7 +304,6 @@
   </div>
 </div>
 
-<!-- MODAL TAREA PENDIENDE -->
 <div class="modal-overlay" id="modal-add-pending">
   <div class="modal">
     <h4>Nueva Tarea Pendiente</h4>
@@ -291,7 +328,6 @@
   </div>
 </div>
 
-<!-- MODAL CLIENTE -->
 <div class="modal-overlay" id="modal-add-client">
   <div class="modal">
     <h4>Nuevo Cliente</h4>
@@ -327,7 +363,6 @@
   </div>
 </div>
 
-<!-- MODAL CONFLICTO DE MÁQUINA -->
 <div class="modal-overlay" id="modal-machine-conflict">
   <div class="modal">
     <h4>⚠️ Posible máquina duplicada</h4>
@@ -349,12 +384,83 @@
   </div>
 </div>
 
-<script>
-// ─── STATE GLOBALES ──────────────────────────────────────
-let services = []; let history = []; let pending = []; let clients = [];
-let customTasks = []; let locations = [];
-let pendingSubmission = null; // Para guardar la tarea pausada durante un conflicto
+<div class="modal-overlay" id="modal-add-user">
+  <div class="modal">
+    <h4>Crear Nuevo Usuario</h4>
+    <div class="form-group"><label>Nombre de Usuario</label><input type="text" id="user-username"></div>
+    <div class="form-group"><label>Contraseña</label><input type="text" id="user-password"></div>
+    <div class="form-group"><label>Rol</label>
+      <select id="user-role">
+        <option value="user">Usuario (Normal)</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('add-user')">Cancelar</button>
+      <button class="btn-primary" onclick="submitAddUser()">Crear Usuario</button>
+    </div>
+  </div>
+</div>
 
+<script>
+// ─── STATE GLOBALES Y LOGIN ──────────────────────────────
+let currentUser = null;
+let services = []; let history = []; let pending = []; let clients = [];
+let customTasks = []; let locations = []; let usersList = [];
+let pendingSubmission = null;
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  const errorEl = document.getElementById('login-error');
+
+  if (!username || !password) {
+    errorEl.innerText = "Completa ambos campos.";
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      currentUser = data.user;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('user-info').innerText = `Logueado como: ${currentUser.username} (${currentUser.role})`;
+      
+      if (currentUser.role === 'admin') {
+        document.getElementById('tab-btn-config').style.display = 'flex';
+      } else {
+        document.getElementById('tab-btn-config').style.display = 'none';
+      }
+      
+      loadAllData(); // Iniciar carga de datos recién después del login
+    } else {
+      errorEl.innerText = data.message || "Error al iniciar sesión";
+      errorEl.style.display = 'block';
+    }
+  } catch (e) {
+    errorEl.innerText = "Error de conexión con el servidor.";
+    errorEl.style.display = 'block';
+  }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  switchTab('principal');
+}
+
+// ─── CARGA DE DATOS ──────────────────────────────────────
 async function loadAllData() {
   try {
     services = await (await fetch('/api/services')).json();
@@ -371,7 +477,80 @@ async function loadAllData() {
     renderTodayPending();
     renderClients();
     renderConfigTemplates();
+
+    if (currentUser && currentUser.role === 'admin') {
+      await loadUsers();
+    }
   } catch (err) { console.error("Error al sincronizar datos:", err); }
+}
+
+async function loadUsers() {
+  try {
+    usersList = await (await fetch('/api/users')).json();
+    renderUsers();
+  } catch(err) { console.error("Error cargando usuarios", err); }
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('users-table-body');
+  if (!usersList.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin usuarios registrados.</td></tr>'; return; }
+  
+  tbody.innerHTML = usersList.map(u => `
+    <tr>
+      <td><strong>${u.username}</strong></td>
+      <td><span style="background: ${u.role==='admin'?'var(--danger-light)':'var(--accent-light)'}; color: ${u.role==='admin'?'var(--danger)':'var(--accent)'}; padding: 3px 8px; font-size: 11.5px; font-weight: 600;">${u.role.toUpperCase()}</span></td>
+      <td style="font-family: monospace; letter-spacing: 1px;">${u.password}</td>
+      <td class="td-actions">
+        <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="promptEditPassword('${u._id}', '${u.username}')">🔑 Editar Clave</button>
+        ${u.username !== 'epg' ? `<button class="btn-danger" style="padding: 4px 8px; font-size: 11px; margin-left: 5px;" onclick="deleteUser('${u._id}')">Borrar</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function submitAddUser() {
+  const username = document.getElementById('user-username').value.trim();
+  const password = document.getElementById('user-password').value.trim();
+  const role = document.getElementById('user-role').value;
+
+  if(!username || !password) return alert("Completa nombre de usuario y contraseña.");
+
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await res.json();
+    if(res.ok) {
+      document.getElementById('user-username').value = '';
+      document.getElementById('user-password').value = '';
+      closeModal('add-user');
+      await loadUsers();
+    } else { alert(data.error); }
+  } catch (err) { console.error(err); }
+}
+
+async function promptEditPassword(id, username) {
+  const newPassword = prompt(`Ingresa la nueva contraseña para el usuario "${username}":`);
+  if(newPassword === null || newPassword.trim() === '') return;
+  
+  try {
+    await fetch(`/api/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPassword.trim() })
+    });
+    await loadUsers();
+  } catch(err) { console.error(err); }
+}
+
+async function deleteUser(id) {
+  if(!confirm('¿Estás seguro de eliminar este usuario del sistema?')) return;
+  try {
+    await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    await loadUsers();
+  } catch(err) { console.error(err); }
 }
 
 function buildDatalists() {
@@ -446,7 +625,7 @@ function initAddPending() {
   const title = document.getElementById('pend-title').value.trim();
 
   if (!title) return alert('Ingresá el título de la tarea.');
-  if (!machine) return finalizeAddPending(); // Permite tareas sin máquina
+  if (!machine) return finalizeAddPending(); 
 
   if (hasMachineLocationConflict(client, machine, location)) {
     pendingSubmission = { type: 'pending' };
@@ -459,7 +638,6 @@ function initAddPending() {
 function hasMachineLocationConflict(client, machine, location) {
   if (!location) return false; 
   
-  // Buscar en las 3 bases de datos por la máquina exacta compartiendo la misma ubicación.
   const inService = services.some(s => s.client === client && s.machine === machine && s.location === location);
   const inPending = pending.some(p => p.client === client && p.machine === machine && p.location === location);
   const inHistory = history.some(h => {
@@ -488,10 +666,8 @@ async function resolveConflict(choice) {
         const id = document.getElementById('conflict-machine-id').value.trim();
         if (!id) return alert('Por favor ingrese un ID o identificador para la máquina nueva.');
         const machineInput = document.getElementById(prefix + 'machine');
-        // Sumamos el ID a la máquina para que sea única
         machineInput.value = machineInput.value.trim() + ' - ID: ' + id;
     } else if (choice === 'existing') {
-        // Marcamos que, ademas de crear la tarea/servicio, inyecte en el historial directamente.
         pendingSubmission.addToHistory = true;
     }
 
@@ -574,7 +750,6 @@ function searchHistory() {
     const matchMachine = !qMachine || m.includes(qMachine);
     const matchLocation = !qLocation || l.includes(qLocation);
 
-    // Muestra u oculta la fila si cumple con AMBOS filtros
     if (matchMachine && matchLocation) {
       r.style.display = '';
     } else {
@@ -723,7 +898,7 @@ async function moveMachineSubmit() {
   closeModal('move-machine'); await loadAllData();
 }
 
-// ─── RENDERS NUEVOS: CONTROL PLANTILLAS DE CONFIGURACIÓN ───
+// ─── CONFIGURACION RESTANTE ───────────────────────────────
 function renderConfigTemplates() {
   const tasksContainer = document.getElementById('cfg-tasks-container');
   const locsContainer = document.getElementById('cfg-locations-container');
@@ -755,9 +930,6 @@ async function deleteTemplateItem(endpoint, id) {
   await fetch(`/api/${endpoint}/${id}`, { method: 'DELETE' });
   await loadAllData();
 }
-
-// ─── INIT INITIALIZATION ─────────────────────────────────
-loadAllData();
 </script>
 </body>
 </html>

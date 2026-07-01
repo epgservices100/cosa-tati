@@ -1,4 +1,3 @@
-
 al momento de hacer una tarea nueva de mantenimiento puedas seleccionar una maquina (del historia) ya existente (pero que todavia puedas crear una nueva) para agregar al historial de esa maquina seleccionada (la ya existente en el historial).
 las tareas en en principal y pendientes sean las mismas. osea que al crear en cualquiera de las 2 pestañas se cree en la otra al igual que al borrar en alguna de las 2 tambien se borre en la otra.
 las tareas que no sean de las ultimas 24 horas o del dia actual en la parte de principal se borren (exeptuando que se presione un boton para extender el tiempo un dia mas)
@@ -20,3 +19,4 @@ agregar un filtro en la busqueda del historial de la ubicacion (para facil busqu
 cuando se valla a agregar una tarea y ya habia un cliente con ese mismo nombre exacto en ves de crearse uno nuevo se sume la maquina al que ya esta pero si comparte la misma ubicacion preguntar si se esta agregando una maquina nueva o se hace una tarea a la anterior. en caso de ser una tarea a la anterior entonces no sumar a maquina al cliente sino sumar la tarea al historial de esa maquina
 usuario con contraseña para cada uno
 
+Quiero que al iniciar la pagina, haya un sistema de login en el cual pida usuario y contraseña, habran admins y usuarios normales, en la pestaña de configuracion, solo admins podran acceder a la misma en la cual tambien se podra visualizar las contraseñas de los demas usuarios y admins pudiendo tambien agregar nuevos usuarios, a su vez podran modificar todas las contraseñas, habra un admin preestablecido la cual el usuario es "epg" y la contraseña sera "0000".
